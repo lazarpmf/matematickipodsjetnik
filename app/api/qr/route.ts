@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import {
   MAX_DROP_BYTES,
   dropTtlMs,
+  isDropId,
   publicOrigin,
   safeContentType,
   sanitizeFilename,
 } from '@/lib/qrDrop';
-import { createDropId, saveDrop } from '@/lib/qrDropStore';
+import { saveDrop } from '@/lib/qrDropStore';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,15 @@ export async function POST(request: Request) {
       { error: 'Fajl nije stigao. Probaj ponovo.' },
       { status: 400 },
     );
+  }
+
+  const id = form.get('id');
+  const sender = form.get('sender');
+  if (typeof id !== 'string' || !isDropId(id)) {
+    return NextResponse.json({ error: 'Link nije ispravan.' }, { status: 400 });
+  }
+  if (typeof sender !== 'string' || !isDropId(sender)) {
+    return NextResponse.json({ error: 'Pošiljalac nije ispravan.' }, { status: 400 });
   }
 
   const file = form.get('file');
@@ -41,17 +51,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const id = createDropId();
   const createdAt = Date.now();
   const meta = {
     filename: sanitizeFilename(file.name),
     contentType: safeContentType(file.type),
     size: bytes.byteLength,
     createdAt,
+    sender,
   };
 
   try {
-    await saveDrop(id, bytes, meta);
+    const saved = await saveDrop(id, bytes, meta);
+    if (!saved) {
+      return NextResponse.json(
+        { error: 'Već čeka jedan fajl. Prvo ga preuzmi.' },
+        { status: 409 },
+      );
+    }
   } catch (error) {
     console.error('QR Drop save failed', error);
     return NextResponse.json(
@@ -60,10 +76,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const url = `${publicOrigin(request)}/qr/${id}`;
   return NextResponse.json({
     id,
-    url,
+    url: `${publicOrigin(request)}/qr/${id}`,
     filename: meta.filename,
     size: meta.size,
     expiresAt: createdAt + dropTtlMs(),

@@ -9,7 +9,7 @@ A Next.js application for managing and viewing mathematical lesson cards with PD
 - **Responsive Design**: Optimized for laptop (4 cards), tablet (2-3 cards), and phone (1 card)
 - **Search & Filter**: Search by title and filter by grade (6-9)
 - **Metrics**: Admin can view visit counts and storage usage
-- **QR Drop**: `/qr` sends a file to another device. The file is deleted as soon as it is downloaded, or after 60 minutes if nobody downloads it.
+- **QR Drop**: `/qr` opens a shared code. Either the computer or the phone can send one file; it is deleted as soon as the other device downloads it, or after 60 minutes.
 
 ## Tech Stack
 

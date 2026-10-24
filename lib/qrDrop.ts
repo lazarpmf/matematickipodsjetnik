@@ -6,6 +6,7 @@ export type DropMeta = {
   contentType: string;
   size: number;
   createdAt: number;
+  sender: string;
 };
 
 export function dropTtlMs(): number {
@@ -59,7 +60,9 @@ export function parseDropMeta(raw: unknown): DropMeta | null {
     return null;
   }
   if (!Number.isFinite(createdAt) || createdAt <= 0) return null;
-  return { filename, contentType, size, createdAt };
+  const sender =
+    typeof value.sender === 'string' && isDropId(value.sender) ? value.sender : '';
+  return { filename, contentType, size, createdAt, sender };
 }
 
 export function dropExpired(meta: DropMeta, now = Date.now()): boolean {

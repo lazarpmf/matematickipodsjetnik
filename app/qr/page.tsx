@@ -5,7 +5,7 @@ import QrShell from './QrShell';
 export const metadata: Metadata = {
   title: 'QR Drop',
   description:
-    'Pošalji fajl na telefon. Fajl se briše odmah poslije preuzimanja.',
+    'Pošalji fajl sa kompjutera na telefon ili sa telefona na kompjuter. Fajl se briše čim se preuzme.',
 };
 
 export default function QrDropPage() {

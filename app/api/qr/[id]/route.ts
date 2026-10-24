@@ -6,26 +6,27 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
   if (!isDropId(id)) {
-    return NextResponse.json({ error: 'Fajl više nije dostupan.' }, { status: 404 });
+    return NextResponse.json({ error: 'Link nije ispravan.' }, { status: 404 });
   }
 
   const meta = await peekDrop(id);
-  if (!meta) {
-    return NextResponse.json({ error: 'Fajl više nije dostupan.' }, { status: 404 });
-  }
-
+  const from = new URL(request.url).searchParams.get('from') ?? '';
   return NextResponse.json(
     {
-      filename: meta.filename,
-      size: meta.size,
-      contentType: meta.contentType,
-      createdAt: meta.createdAt,
-      expiresAt: meta.createdAt + dropTtlMs(),
+      file: meta
+        ? {
+            filename: meta.filename,
+            size: meta.size,
+            createdAt: meta.createdAt,
+            expiresAt: meta.createdAt + dropTtlMs(),
+            mine: meta.sender !== '' && meta.sender === from,
+          }
+        : null,
     },
     { headers: { 'cache-control': 'no-store' } },
   );

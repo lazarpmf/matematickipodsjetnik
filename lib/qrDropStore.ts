@@ -38,7 +38,7 @@ export async function saveDrop(
   id: string,
   bytes: Uint8Array,
   meta: DropMeta,
-): Promise<void> {
+): Promise<boolean> {
   if (!isDropId(id)) throw new Error('Neispravan identifikator.');
   if (onNetlify()) {
     const body = bytes.buffer.slice(
@@ -49,18 +49,24 @@ export async function saveDrop(
       metadata: { ...meta },
       onlyIfNew: true,
     });
-    if (!result.modified) throw new Error('Fajl nije sačuvan.');
-    return;
+    return result.modified;
   }
 
   const dir = localDir();
   await mkdir(dir, { recursive: true });
   const bin = path.join(dir, `${id}.bin`);
   const metaPath = path.join(dir, `${id}.json`);
+  try {
+    await stat(bin);
+    return false;
+  } catch {
+    // Slot is empty.
+  }
   const partial = `${bin}.partial`;
   await writeFile(partial, bytes);
   await writeFile(metaPath, JSON.stringify(meta));
   await rename(partial, bin);
+  return true;
 }
 
 export async function peekDrop(id: string): Promise<DropMeta | null> {
