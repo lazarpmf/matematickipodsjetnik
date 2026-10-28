@@ -5,7 +5,7 @@ A Next.js application for managing and viewing mathematical lesson cards with PD
 ## Features
 
 - **Public Access**: Users can search, view, print, and download lesson PDFs
-- **Admin Panel**: Admins can add, edit, and delete lesson cards
+- **Admin Panel**: Admins can add, edit, delete, and pin lesson cards. Pinned cards stay at the top of the site.
 - **Responsive Design**: Optimized for laptop (4 cards), tablet (2-3 cards), and phone (1 card)
 - **Search & Filter**: Search by title and filter by grade (6-9)
 - **Metrics**: Admin can view visit counts and storage usage
@@ -113,6 +113,7 @@ A Next.js application for managing and viewing mathematical lesson cards with PD
   - Add new lesson cards
   - Edit existing cards
   - Delete cards
+  - Pin cards so they appear first. The most recently pinned card is the first one. Visitors see a “Zakačeno” mark on those cards.
   - View visit statistics
   - View storage usage
   - Change password

@@ -8,6 +8,7 @@ export interface Lesson {
   created_at: string;
   updated_at: string;
   created_by?: string | null;
+  pinned?: boolean;
 }
 
 export interface Visit {
