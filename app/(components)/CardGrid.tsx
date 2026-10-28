@@ -8,6 +8,8 @@ interface CardGridProps {
   onCardClick: (lesson: Lesson) => void;
   onEdit?: (lesson: Lesson) => void;
   onDelete?: (lesson: Lesson) => void;
+  onTogglePin?: (lesson: Lesson) => void;
+  pinningId?: string | null;
   isAdmin?: boolean;
   isLoading?: boolean;
   emptyMessage?: string;
@@ -18,6 +20,8 @@ export default function CardGrid({
   onCardClick,
   onEdit,
   onDelete,
+  onTogglePin,
+  pinningId = null,
   isAdmin = false,
   isLoading = false,
   emptyMessage = 'No lessons found.',
@@ -48,6 +52,8 @@ export default function CardGrid({
             onCardClick={onCardClick}
             onEdit={onEdit}
             onDelete={onDelete}
+            onTogglePin={onTogglePin}
+            isPinning={pinningId === lesson.id}
             isAdmin={isAdmin}
           />
         ))}
