@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface NavbarProps {
   onAboutClick?: () => void;
@@ -13,7 +14,8 @@ export default function Navbar({
   onHomeClick,
   isAboutActive = false,
 }: NavbarProps) {
-  const isHomeActive = !isAboutActive;
+  const pathname = usePathname();
+  const isHomeActive = pathname === '/' && !isAboutActive;
   const tabBase = 'px-4 py-1.5 text-sm font-medium transition-colors';
   const tabActive = 'text-gray-900';
   const tabInactive = 'text-gray-700 hover:text-gray-900';
@@ -45,7 +47,7 @@ export default function Navbar({
             </Link>
             <div className="hidden space-x-4 md:flex">
               <Link
-                href="#about"
+                href={onAboutClick ? '#about' : '/#about'}
                 onClick={onAboutClick}
                 className={`${tabBase} ${
                   isAboutActive ? tabActive : tabInactive
@@ -56,6 +58,14 @@ export default function Navbar({
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <Link
+              href="/tasks"
+              className={`${tabBase} ${
+                pathname === '/tasks' ? tabActive : tabInactive
+              }`}
+            >
+              Zadaci
+            </Link>
             <Link href="/qr" className={`${tabBase} ${tabInactive}`}>
               QR Drop
             </Link>

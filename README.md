@@ -10,6 +10,7 @@ A Next.js application for managing and viewing mathematical lesson cards with PD
 - **Search & Filter**: Search by title and filter by grade (6-9)
 - **Metrics**: Admin can view visit counts and storage usage
 - **QR Drop**: `/qr` opens a shared code. Either the computer or the phone can send one file; it is deleted as soon as the other device downloads it, or after 60 minutes.
+- **Tasks**: `/tasks` lets an admin attach a PDF to a title and a code, and choose whether that task is public. Guests open a task with the code. Public tasks are listed as title strips.
 
 ## Tech Stack
 
