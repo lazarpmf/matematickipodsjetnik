@@ -1,16 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
-
-const PdfViewer = dynamic(() => import('../(components)/PdfViewer'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center text-gray-600">
-      Učitavanje PDF-a...
-    </div>
-  ),
-});
+import { useEffect } from 'react';
 
 interface TaskPdfModalProps {
   title: string;
@@ -19,8 +9,6 @@ interface TaskPdfModalProps {
 }
 
 export default function TaskPdfModal({ title, pdfUrl, onClose }: TaskPdfModalProps) {
-  const [zoomLevel, setZoomLevel] = useState(100);
-
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
@@ -48,46 +36,29 @@ export default function TaskPdfModal({ title, pdfUrl, onClose }: TaskPdfModalPro
       onClick={onClose}
     >
       <div
-        className="relative h-full w-full max-w-6xl overflow-hidden rounded-lg bg-white shadow-2xl"
+        className="flex h-full w-full max-w-6xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="absolute right-2 top-2 z-10 flex max-w-[calc(100%-1rem)] flex-wrap items-center justify-end gap-2 rounded-full bg-white/90 px-2 py-1 shadow-md backdrop-blur">
-          <span className="max-w-xs truncate px-2 text-xs font-medium text-gray-800">
-            {title}
-          </span>
-          <button
-            type="button"
-            onClick={() => setZoomLevel((value) => Math.max(50, value - 10))}
-            className="rounded px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100"
-          >
-            −
-          </button>
-          <span className="min-w-[36px] text-center text-xs text-gray-600">
-            {zoomLevel}%
-          </span>
-          <button
-            type="button"
-            onClick={() => setZoomLevel((value) => Math.min(200, value + 10))}
-            className="rounded px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100"
-          >
-            +
-          </button>
-          <button
-            type="button"
-            onClick={download}
-            className="rounded px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
-          >
-            Preuzmi
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100"
-          >
-            ✕ Zatvori
-          </button>
+        <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-3">
+          <h2 className="truncate text-base font-semibold text-gray-900">{title}</h2>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={download}
+              className="rounded border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Preuzmi
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded bg-gray-900 px-3 py-1 text-sm font-medium text-white hover:bg-gray-700"
+            >
+              Zatvori
+            </button>
+          </div>
         </div>
-        <PdfViewer pdfUrl={pdfUrl} zoomLevel={zoomLevel} />
+        <iframe title={title} src={pdfUrl} className="h-full w-full flex-1 bg-gray-100" />
       </div>
     </div>
   );
