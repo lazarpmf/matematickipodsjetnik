@@ -76,7 +76,7 @@ export default function Card({
       )}
       {lesson.pinned && (
         <span
-          className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-[55%]"
+          className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-[34%]"
           title="Zakačeno"
         >
           <PinIcon />
@@ -105,23 +105,31 @@ export default function Card({
 function PinIcon() {
   return (
     <svg
-      width="34"
-      height="34"
-      viewBox="0 0 48 48"
+      width="46"
+      height="46"
+      viewBox="0 0 120 120"
       aria-hidden="true"
       className="drop-shadow-md"
     >
-      <ellipse cx="24" cy="44" rx="5" ry="1.6" fill="#000" opacity="0.18" />
-      <path
-        d="M24 22v16"
-        stroke="#6b7280"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-      />
-      <path d="M24 36.5 21.6 44h4.8Z" fill="#9ca3af" />
-      <circle cx="24" cy="16" r="12" fill="#dc2626" />
-      <circle cx="24" cy="16" r="12" fill="none" stroke="#991b1b" strokeWidth="1.2" />
-      <ellipse cx="19" cy="12" rx="4.2" ry="2.4" fill="#fff" opacity="0.45" />
+      <g transform="translate(60 64) rotate(-50)">
+        <polygon points="-10,6 0,62 10,6" fill="#d7dbe2" />
+        <polygon points="1,8 0,62 10,8" fill="#aeb4be" />
+        <ellipse cx="0" cy="0" rx="28" ry="25" fill="#f0443c" />
+        <ellipse cx="-7" cy="-7" rx="13" ry="9" fill="#ff8a82" opacity="0.75" />
+        <ellipse cx="7" cy="9" rx="15" ry="9" fill="#c81e22" opacity="0.38" />
+        <path
+          d="M-15,0 L-15,-40 Q-15,-50 0,-50 Q15,-50 15,-40 L15,0 Q15,12 0,8 Q-15,12 -15,0 Z"
+          fill="#f23832"
+        />
+        <path
+          d="M1,-2 L1,-42 Q1,-48 10,-46 L15,-40 L15,0 Q10,8 1,6 Z"
+          fill="#d21c22"
+          opacity="0.42"
+        />
+        <ellipse cx="0" cy="-46" rx="15" ry="8" fill="#ff6a62" />
+        <ellipse cx="-3" cy="-48.5" rx="9" ry="3.2" fill="#ffd0cb" />
+        <ellipse cx="2" cy="-43" rx="12" ry="2.4" fill="#e12e28" opacity="0.5" />
+      </g>
     </svg>
   );
 }
