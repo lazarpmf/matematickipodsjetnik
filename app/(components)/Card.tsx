@@ -74,15 +74,19 @@ export default function Card({
           </button>
         </div>
       )}
+      {lesson.pinned && (
+        <span
+          className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-[55%]"
+          title="Zakačeno"
+        >
+          <PinIcon />
+          <span className="sr-only">Zakačeno</span>
+        </span>
+      )}
       <div className="mb-2 flex flex-wrap gap-2">
         <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
           {lesson.grade} razred
         </span>
-        {lesson.pinned && (
-          <span className="inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
-            Zakačeno
-          </span>
-        )}
       </div>
       <h3 className="mb-2 text-lg font-semibold text-gray-900 line-clamp-2">
         {displayTitle}
@@ -95,5 +99,29 @@ export default function Card({
         ))}
       </div>
     </div>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg
+      width="34"
+      height="34"
+      viewBox="0 0 48 48"
+      aria-hidden="true"
+      className="drop-shadow-md"
+    >
+      <ellipse cx="24" cy="44" rx="5" ry="1.6" fill="#000" opacity="0.18" />
+      <path
+        d="M24 22v16"
+        stroke="#6b7280"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+      />
+      <path d="M24 36.5 21.6 44h4.8Z" fill="#9ca3af" />
+      <circle cx="24" cy="16" r="12" fill="#dc2626" />
+      <circle cx="24" cy="16" r="12" fill="none" stroke="#991b1b" strokeWidth="1.2" />
+      <ellipse cx="19" cy="12" rx="4.2" ry="2.4" fill="#fff" opacity="0.45" />
+    </svg>
   );
 }

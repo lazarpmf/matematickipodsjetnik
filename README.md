@@ -114,7 +114,7 @@ A Next.js application for managing and viewing mathematical lesson cards with PD
   - Add new lesson cards
   - Edit existing cards
   - Delete cards
-  - Pin cards so they appear first. The most recently pinned card is the first one. Visitors see a “Zakačeno” mark on those cards.
+  - Pin cards so they appear first. The most recently pinned card is the first one. Visitors see a pin on those cards.
   - View visit statistics
   - View storage usage
   - Change password
