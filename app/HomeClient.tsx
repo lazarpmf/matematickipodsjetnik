@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser, isAdmin, signIn } from '@/lib/auth';
 import { logPageVisit } from './actions/metrics';
 import { getLessons, createLesson, updateLesson, deleteLesson, setLessonPinned } from './actions/lessons';
-import { applyPins, nextPinOrder } from '@/lib/lessonOrder';
+import { sortPresentedLessons } from '@/lib/lessonOrder';
 import type { Lesson } from '@/lib/types';
 import Navbar from './(components)/Navbar';
 import SearchBar from './(components)/SearchBar';
@@ -118,24 +118,31 @@ export default function HomeClient({ initialLessons }: HomeClientProps) {
     const pinned = !lesson.pinned;
     const previous = lessons;
     const previousPage = currentPage;
-    const order = previous.filter((item) => item.pinned).map((item) => item.id);
 
     setPinningId(lesson.id);
-    setLessons(applyPins(previous, nextPinOrder(order, lesson.id, pinned)));
+    setLessons(
+      sortPresentedLessons(
+        previous.map((item) =>
+          item.id === lesson.id
+            ? { ...item, pinned, pinnedAt: pinned ? Date.now() : null }
+            : item,
+        ),
+      ),
+    );
     setCurrentPage(1);
 
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      await setLessonPinned(lesson.id, pinned, session?.access_token);
+      const updated = await setLessonPinned(lesson.id, pinned, session?.access_token);
+      setLessons(updated);
       setNotification({
         message: pinned
           ? 'Kartica je zakačena i sada je prva na sajtu.'
           : 'Kartica više nije zakačena.',
         type: 'success',
       });
-      await refreshLessons({ silent: true });
     } catch (error) {
       setLessons(previous);
       setCurrentPage(previousPage);

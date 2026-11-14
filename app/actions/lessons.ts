@@ -1,8 +1,13 @@
 'use server';
 
-import { unstable_cache, revalidateTag } from 'next/cache';
-import { applyPins } from '@/lib/lessonOrder';
-import { readPinOrder, setPinnedLesson } from '@/lib/lessonPinStore';
+import { revalidateTag } from 'next/cache';
+import {
+  decorateLesson,
+  sortPresentedLessons,
+  withPinTag,
+  PIN_TAG_PREFIX,
+  visibleTags,
+} from '@/lib/lessonOrder';
 import { createClient } from '@/lib/supabaseServer';
 import type { Lesson } from '@/lib/types';
 
@@ -21,31 +26,41 @@ async function fetchLessonsFromDb(): Promise<Lesson[]> {
 }
 
 export async function getLessons(): Promise<Lesson[]> {
-  const lessons = await unstable_cache(fetchLessonsFromDb, ['lessons-list'], {
-    revalidate: 60,
-    tags: ['lessons'],
-  })();
-
-  try {
-    return applyPins(lessons, await readPinOrder());
-  } catch (error) {
-    console.error('Failed to read pinned lessons:', error);
-    return applyPins(lessons, []);
-  }
+  const lessons = await fetchLessonsFromDb();
+  return sortPresentedLessons(lessons.map(decorateLesson));
 }
 
 export async function setLessonPinned(
   id: string,
   pinned: boolean,
   accessToken?: string,
-): Promise<void> {
-  await assertAdmin(accessToken);
-  await setPinnedLesson(id, pinned);
+): Promise<Lesson[]> {
+  const supabase = await createClient(accessToken);
+  await assertAdmin(accessToken, supabase);
+
+  const { data: existing, error: readError } = await supabase
+    .from('lessons')
+    .select('tags')
+    .eq('id', id)
+    .single();
+
+  if (readError || !existing) throw new Error('Kartica nije pronađena.');
+
+  const { error } = await supabase
+    .from('lessons')
+    .update({ tags: withPinTag(existing.tags, pinned) })
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
   revalidateTag('lessons', 'max');
+  return getLessons();
 }
 
-async function assertAdmin(accessToken?: string): Promise<void> {
-  const supabase = await createClient(accessToken);
+async function assertAdmin(
+  accessToken?: string,
+  existing?: Awaited<ReturnType<typeof createClient>>,
+): Promise<void> {
+  const supabase = existing ?? (await createClient(accessToken));
   const {
     data: { user },
     error: authError,
@@ -117,6 +132,16 @@ export async function updateLesson(
   
   if (authError || !user) throw new Error('Not authenticated');
 
+  const { data: existing } = await supabase
+    .from('lessons')
+    .select('tags')
+    .eq('id', id)
+    .maybeSingle();
+  const pinTag = (existing?.tags ?? []).find(
+    (tag: string) => typeof tag === 'string' && tag.startsWith(PIN_TAG_PREFIX),
+  );
+  const tagsToSave = pinTag ? [pinTag, ...visibleTags(tags)] : visibleTags(tags);
+
   const { data, error } = await supabase
     .from('lessons')
     .update({
@@ -124,7 +149,7 @@ export async function updateLesson(
       description,
       grade,
       pdf_path,
-      tags,
+      tags: tagsToSave,
     })
     .eq('id', id)
     .select()
@@ -139,7 +164,7 @@ export async function updateLesson(
     throw new Error(error.message);
   }
   revalidateTag('lessons', 'max');
-  return data;
+  return decorateLesson(data);
 }
 
 export async function deleteLesson(
@@ -166,10 +191,5 @@ export async function deleteLesson(
   const { error } = await supabase.from('lessons').delete().eq('id', id);
 
   if (error) throw error;
-  try {
-    await setPinnedLesson(id, false);
-  } catch (pinError) {
-    console.error('Failed to unpin deleted lesson:', pinError);
-  }
   revalidateTag('lessons', 'max');
 }

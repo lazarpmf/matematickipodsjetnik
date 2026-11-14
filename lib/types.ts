@@ -9,6 +9,7 @@ export interface Lesson {
   updated_at: string;
   created_by?: string | null;
   pinned?: boolean;
+  pinnedAt?: number | null;
 }
 
 export interface Visit {

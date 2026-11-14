@@ -1,37 +1,48 @@
 import type { Lesson } from './types';
 
-const MAX_PINS = 100;
+export const PIN_TAG_PREFIX = '__pin:';
 
-export function nextPinOrder(
-  order: string[],
-  id: string,
-  pinned: boolean,
-): string[] {
-  const seen = new Set<string>([id]);
-  const without: string[] = [];
-  for (const item of order) {
-    if (seen.has(item)) continue;
-    seen.add(item);
-    without.push(item);
+export function pinTimestamp(tags: string[] | null | undefined): number | null {
+  if (!tags) return null;
+  for (const tag of tags) {
+    if (!tag.startsWith(PIN_TAG_PREFIX)) continue;
+    const value = Number(tag.slice(PIN_TAG_PREFIX.length));
+    if (Number.isFinite(value) && value > 0) return value;
   }
-  if (!pinned) return without;
-  return [id, ...without].slice(0, MAX_PINS);
+  return null;
 }
 
-export function applyPins(lessons: Lesson[], pinOrder: string[]): Lesson[] {
-  const rank = new Map<string, number>();
-  for (const id of pinOrder) {
-    if (!rank.has(id)) rank.set(id, rank.size);
-  }
+export function visibleTags(tags: string[] | null | undefined): string[] {
+  return (tags ?? []).filter((tag) => !tag.startsWith(PIN_TAG_PREFIX));
+}
 
-  return lessons
-    .map((lesson) => ({ ...lesson, pinned: rank.has(lesson.id) }))
-    .sort((a, b) => {
-      const ar = rank.get(a.id) ?? Number.POSITIVE_INFINITY;
-      const br = rank.get(b.id) ?? Number.POSITIVE_INFINITY;
-      if (ar !== br) return ar - br;
-      return createdAt(b) - createdAt(a);
-    });
+export function withPinTag(
+  tags: string[] | null | undefined,
+  pinned: boolean,
+  now = Date.now(),
+): string[] {
+  const visible = visibleTags(tags);
+  if (!pinned) return visible;
+  return [`${PIN_TAG_PREFIX}${now}`, ...visible];
+}
+
+export function decorateLesson(lesson: Lesson): Lesson {
+  const pinnedAt = pinTimestamp(lesson.tags);
+  return {
+    ...lesson,
+    tags: visibleTags(lesson.tags),
+    pinned: pinnedAt !== null,
+    pinnedAt,
+  };
+}
+
+export function sortPresentedLessons(lessons: Lesson[]): Lesson[] {
+  return [...lessons].sort((a, b) => {
+    const ar = a.pinnedAt ?? 0;
+    const br = b.pinnedAt ?? 0;
+    if (ar !== br) return br - ar;
+    return createdAt(b) - createdAt(a);
+  });
 }
 
 function createdAt(lesson: Lesson): number {
