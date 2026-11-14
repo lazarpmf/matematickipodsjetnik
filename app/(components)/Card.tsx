@@ -7,6 +7,8 @@ interface CardProps {
   onCardClick: (lesson: Lesson) => void;
   onEdit?: (lesson: Lesson) => void;
   onDelete?: (lesson: Lesson) => void;
+  onTogglePin?: (lesson: Lesson) => void;
+  isPinning?: boolean;
   isAdmin?: boolean;
 }
 
@@ -15,6 +17,8 @@ export default function Card({
   onCardClick,
   onEdit,
   onDelete,
+  onTogglePin,
+  isPinning = false,
   isAdmin = false,
 }: CardProps) {
   const tags =
@@ -27,21 +31,42 @@ export default function Card({
 
   return (
     <div
-      className="group relative cursor-pointer rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-lg"
+      className={`group relative cursor-pointer rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-lg ${
+        lesson.pinned
+          ? 'border-amber-300 ring-2 ring-amber-200'
+          : 'border-gray-200'
+      }`}
       onClick={() => onCardClick(lesson)}
     >
       {isAdmin && (
         <div
-          className="absolute right-2 top-2 z-10 flex gap-2"
+          className="mb-3 flex flex-wrap gap-2"
           onClick={(e) => e.stopPropagation()}
         >
+          {onTogglePin && (
+            <button
+              type="button"
+              onClick={() => onTogglePin(lesson)}
+              disabled={isPinning}
+              aria-pressed={Boolean(lesson.pinned)}
+              className={`rounded px-3 py-1 text-xs font-medium transition-colors disabled:opacity-60 ${
+                lesson.pinned
+                  ? 'bg-amber-500 text-white hover:bg-amber-600'
+                  : 'bg-white text-amber-800 ring-1 ring-amber-300 hover:bg-amber-50'
+              }`}
+            >
+              {isPinning ? 'Čuvam…' : lesson.pinned ? 'Otkači' : 'Zakači'}
+            </button>
+          )}
           <button
+            type="button"
             onClick={() => onEdit?.(lesson)}
             className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-700"
           >
             Promijeni
           </button>
           <button
+            type="button"
             onClick={() => onDelete?.(lesson)}
             className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-red-700"
           >
@@ -49,10 +74,15 @@ export default function Card({
           </button>
         </div>
       )}
-      <div className="mb-2">
+      <div className="mb-2 flex flex-wrap gap-2">
         <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
           {lesson.grade} razred
         </span>
+        {lesson.pinned && (
+          <span className="inline-block rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+            Zakačeno
+          </span>
+        )}
       </div>
       <h3 className="mb-2 text-lg font-semibold text-gray-900 line-clamp-2">
         {displayTitle}

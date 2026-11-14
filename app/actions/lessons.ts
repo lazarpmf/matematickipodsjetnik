@@ -1,6 +1,8 @@
 'use server';
 
 import { unstable_cache, revalidateTag } from 'next/cache';
+import { applyPins } from '@/lib/lessonOrder';
+import { readPinOrder, setPinnedLesson } from '@/lib/lessonPinStore';
 import { createClient } from '@/lib/supabaseServer';
 import type { Lesson } from '@/lib/types';
 
@@ -19,10 +21,48 @@ async function fetchLessonsFromDb(): Promise<Lesson[]> {
 }
 
 export async function getLessons(): Promise<Lesson[]> {
-  return unstable_cache(fetchLessonsFromDb, ['lessons-list'], {
+  const lessons = await unstable_cache(fetchLessonsFromDb, ['lessons-list'], {
     revalidate: 60,
     tags: ['lessons'],
   })();
+
+  try {
+    return applyPins(lessons, await readPinOrder());
+  } catch (error) {
+    console.error('Failed to read pinned lessons:', error);
+    return applyPins(lessons, []);
+  }
+}
+
+export async function setLessonPinned(
+  id: string,
+  pinned: boolean,
+  accessToken?: string,
+): Promise<void> {
+  await assertAdmin(accessToken);
+  await setPinnedLesson(id, pinned);
+  revalidateTag('lessons', 'max');
+}
+
+async function assertAdmin(accessToken?: string): Promise<void> {
+  const supabase = await createClient(accessToken);
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) throw new Error('Niste prijavljeni.');
+
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .eq('role', 'admin')
+    .maybeSingle();
+
+  if (error || data?.role !== 'admin') {
+    throw new Error('Samo administrator može da zakači karticu.');
+  }
 }
 
 export async function createLesson(
@@ -126,5 +166,10 @@ export async function deleteLesson(
   const { error } = await supabase.from('lessons').delete().eq('id', id);
 
   if (error) throw error;
+  try {
+    await setPinnedLesson(id, false);
+  } catch (pinError) {
+    console.error('Failed to unpin deleted lesson:', pinError);
+  }
   revalidateTag('lessons', 'max');
 }

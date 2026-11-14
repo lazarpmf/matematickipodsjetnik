@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser, isAdmin, signIn } from '@/lib/auth';
 import { logPageVisit } from './actions/metrics';
-import { getLessons, createLesson, updateLesson, deleteLesson } from './actions/lessons';
+import { getLessons, createLesson, updateLesson, deleteLesson, setLessonPinned } from './actions/lessons';
+import { applyPins, nextPinOrder } from '@/lib/lessonOrder';
 import type { Lesson } from '@/lib/types';
 import Navbar from './(components)/Navbar';
 import SearchBar from './(components)/SearchBar';
@@ -38,6 +39,7 @@ export default function HomeClient({ initialLessons }: HomeClientProps) {
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [deletingLesson, setDeletingLesson] = useState<Lesson | null>(null);
+  const [pinningId, setPinningId] = useState<string | null>(null);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
@@ -98,15 +100,51 @@ export default function HomeClient({ initialLessons }: HomeClientProps) {
     aboutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [showAbout]);
 
-  async function refreshLessons() {
+  async function refreshLessons(options?: { silent?: boolean }) {
     try {
-      setIsRefreshingLessons(true);
+      if (!options?.silent) setIsRefreshingLessons(true);
       const data = await getLessons();
       setLessons(data);
     } catch (error) {
       console.error('Failed to load lessons:', error);
     } finally {
-      setIsRefreshingLessons(false);
+      if (!options?.silent) setIsRefreshingLessons(false);
+    }
+  }
+
+  async function handleTogglePin(lesson: Lesson) {
+    if (pinningId) return;
+
+    const pinned = !lesson.pinned;
+    const previous = lessons;
+    const previousPage = currentPage;
+    const order = previous.filter((item) => item.pinned).map((item) => item.id);
+
+    setPinningId(lesson.id);
+    setLessons(applyPins(previous, nextPinOrder(order, lesson.id, pinned)));
+    setCurrentPage(1);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      await setLessonPinned(lesson.id, pinned, session?.access_token);
+      setNotification({
+        message: pinned
+          ? 'Kartica je zakačena i sada je prva na sajtu.'
+          : 'Kartica više nije zakačena.',
+        type: 'success',
+      });
+      await refreshLessons({ silent: true });
+    } catch (error) {
+      setLessons(previous);
+      setCurrentPage(previousPage);
+      setNotification({
+        message: error instanceof Error ? error.message : 'Kartica nije zakačena.',
+        type: 'error',
+      });
+    } finally {
+      setPinningId(null);
     }
   }
 
@@ -311,6 +349,8 @@ export default function HomeClient({ initialLessons }: HomeClientProps) {
                 setShowLessonForm(true);
               }}
               onDelete={setDeletingLesson}
+              onTogglePin={handleTogglePin}
+              pinningId={pinningId}
               isAdmin={isAdminUser}
             />
             {totalPages > 1 && (
