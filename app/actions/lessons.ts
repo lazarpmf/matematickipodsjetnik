@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import {
   decorateLesson,
   sortPresentedLessons,
@@ -10,6 +10,15 @@ import {
 } from '@/lib/lessonOrder';
 import { createClient } from '@/lib/supabaseServer';
 import type { Lesson } from '@/lib/types';
+
+function refreshLessonPages() {
+  try {
+    revalidateTag('lessons', 'max');
+    revalidatePath('/');
+  } catch (error) {
+    console.error('Failed to refresh the lesson page:', error);
+  }
+}
 
 const LESSON_LIST_COLUMNS =
   'id, title, description, grade, pdf_path, tags, created_at, updated_at, created_by';
@@ -52,7 +61,7 @@ export async function setLessonPinned(
     .eq('id', id);
 
   if (error) throw new Error(error.message);
-  revalidateTag('lessons', 'max');
+  refreshLessonPages();
   return getLessons();
 }
 
@@ -114,7 +123,7 @@ export async function createLesson(
     }
     throw new Error(error.message);
   }
-  revalidateTag('lessons', 'max');
+  refreshLessonPages();
   return data;
 }
 
@@ -163,7 +172,7 @@ export async function updateLesson(
     }
     throw new Error(error.message);
   }
-  revalidateTag('lessons', 'max');
+  refreshLessonPages();
   return decorateLesson(data);
 }
 
@@ -191,5 +200,5 @@ export async function deleteLesson(
   const { error } = await supabase.from('lessons').delete().eq('id', id);
 
   if (error) throw error;
-  revalidateTag('lessons', 'max');
+  refreshLessonPages();
 }

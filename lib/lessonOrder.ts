@@ -27,7 +27,7 @@ export function withPinTag(
 }
 
 export function decorateLesson(lesson: Lesson): Lesson {
-  const pinnedAt = pinTimestamp(lesson.tags);
+  const pinnedAt = pinTimestamp(lesson.tags) ?? lesson.pinnedAt ?? null;
   return {
     ...lesson,
     tags: visibleTags(lesson.tags),

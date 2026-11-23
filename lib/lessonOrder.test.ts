@@ -61,4 +61,6 @@ test('pinned lessons stay ahead of newer ones, latest pin first', () => {
   assert.deepEqual(sorted[0].tags, ['#matematika']);
   assert.equal(pinTimestamp(withPinTag(['#matematika'], false)), null);
   assert.deepEqual(visibleTags(['__pin:5', '#zbir']), ['#zbir']);
+  assert.equal(decorateLesson(sorted[0]).pinnedAt, sorted[0].pinnedAt);
+  assert.equal(decorateLesson(sorted[0]).pinned, true);
 });

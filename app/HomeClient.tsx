@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { getCurrentUser, isAdmin, signIn } from '@/lib/auth';
 import { logPageVisit } from './actions/metrics';
 import { getLessons, createLesson, updateLesson, deleteLesson, setLessonPinned } from './actions/lessons';
-import { sortPresentedLessons } from '@/lib/lessonOrder';
+import { decorateLesson, sortPresentedLessons } from '@/lib/lessonOrder';
 import type { Lesson } from '@/lib/types';
 import Navbar from './(components)/Navbar';
 import SearchBar from './(components)/SearchBar';
@@ -100,11 +100,16 @@ export default function HomeClient({ initialLessons }: HomeClientProps) {
     aboutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [showAbout]);
 
-  async function refreshLessons(options?: { silent?: boolean }) {
+  async function refreshLessons(options?: { silent?: boolean; keep?: Lesson }) {
     try {
       if (!options?.silent) setIsRefreshingLessons(true);
       const data = await getLessons();
-      setLessons(data);
+      const keep = options?.keep;
+      setLessons(
+        keep && !data.some((lesson) => lesson.id === keep.id)
+          ? sortPresentedLessons([keep, ...data])
+          : data,
+      );
     } catch (error) {
       console.error('Failed to load lessons:', error);
     } finally {
@@ -194,37 +199,41 @@ export default function HomeClient({ initialLessons }: HomeClientProps) {
       } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
 
-      if (editingLesson) {
-        await updateLesson(
-          editingLesson.id,
-          data.title,
-          data.description,
-          data.grade,
-          data.pdf_path,
-          data.tags,
-          accessToken
-        );
-        setNotification({
-          message: 'Lekcija je uspješno ažurirana',
-          type: 'warning',
-        });
-      } else {
-        await createLesson(
-          data.title,
-          data.description,
-          data.grade,
-          data.pdf_path,
-          data.tags,
-          accessToken
-        );
-        setNotification({
-          message: 'Nova lekcija je uspješno dodata',
-          type: 'success',
-        });
-      }
+      const saved = editingLesson
+        ? await updateLesson(
+            editingLesson.id,
+            data.title,
+            data.description,
+            data.grade,
+            data.pdf_path,
+            data.tags,
+            accessToken
+          )
+        : await createLesson(
+            data.title,
+            data.description,
+            data.grade,
+            data.pdf_path,
+            data.tags,
+            accessToken
+          );
+      const shown = decorateLesson(saved);
+      setCurrentPage(1);
+      setLessons((current) =>
+        sortPresentedLessons([
+          shown,
+          ...current.filter((lesson) => lesson.id !== shown.id),
+        ]),
+      );
+      setNotification({
+        message: editingLesson
+          ? 'Lekcija je uspješno ažurirana'
+          : 'Nova lekcija je uspješno dodata',
+        type: editingLesson ? 'warning' : 'success',
+      });
       setShowLessonForm(false);
       setEditingLesson(null);
-      await refreshLessons();
+      await refreshLessons({ silent: true, keep: shown });
     } catch (error: any) {
       alert(error.message || 'Failed to save lesson');
       throw error;
