@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import type { Lesson } from '@/lib/types';
 import { lessonSchema, type LessonFormData } from '@/lib/validators';
 import { uploadPDF } from '@/lib/storage';
+import { isPdfBytes, NOT_A_PDF_MESSAGE } from '@/lib/pdfBytes';
 
 interface LessonFormProps {
   lesson?: Lesson | null;
@@ -36,6 +37,7 @@ export default function LessonForm({
       let pdfPath = lesson?.pdf_path || '';
 
       if (pdfFile) {
+        await assertPdf(pdfFile);
         const fileName = `${Date.now()}_${pdfFile.name}`;
         pdfPath = await uploadPDF(pdfFile, fileName);
       }
@@ -99,13 +101,23 @@ export default function LessonForm({
     }
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
+    if (!file) return;
+    try {
+      await assertPdf(file);
+      setError('');
       setPdfFile(file);
-    } else {
-      setError('Please select a PDF file');
+    } catch (err) {
+      setPdfFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      setError(err instanceof Error ? err.message : NOT_A_PDF_MESSAGE);
     }
+  }
+
+  async function assertPdf(file: File) {
+    const header = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+    if (!isPdfBytes(header)) throw new Error(NOT_A_PDF_MESSAGE);
   }
 
   function normalizeTags(input: string): string[] {
@@ -215,7 +227,7 @@ export default function LessonForm({
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf"
+              accept="application/pdf,.pdf"
               onChange={handleFileChange}
               className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
               required={!lesson}

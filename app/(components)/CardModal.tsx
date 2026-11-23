@@ -1,26 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
 import type { Lesson } from '@/lib/types';
 import { getPublicURL } from '@/lib/storage';
+import { isPdfBytes, NOT_A_PDF_MESSAGE } from '@/lib/pdfBytes';
 
 interface CardModalProps {
   lesson: Lesson | null;
   onClose: () => void;
 }
 
-const PdfViewer = dynamic(() => import('./PdfViewer'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-full w-full flex items-center justify-center text-gray-600">
-      Učitavanje PDF-a...
-    </div>
-  ),
-});
-
 export default function CardModal({ lesson, onClose }: CardModalProps) {
   const [zoomLevel, setZoomLevel] = useState(100);
+  const [pdfState, setPdfState] = useState<'checking' | 'pdf' | 'invalid'>('checking');
 
   useEffect(() => {
     if (lesson) {
@@ -45,6 +37,21 @@ export default function CardModal({ lesson, onClose }: CardModalProps) {
   useEffect(() => {
     if (!lesson) return;
     setZoomLevel(100);
+    setPdfState('checking');
+    const pdfUrl = getPublicURL(lesson.pdf_path);
+    let cancelled = false;
+    fetch(pdfUrl, { headers: { Range: 'bytes=0-4' } })
+      .then((response) => response.arrayBuffer())
+      .then((buffer) => {
+        if (cancelled) return;
+        setPdfState(isPdfBytes(new Uint8Array(buffer)) ? 'pdf' : 'invalid');
+      })
+      .catch(() => {
+        if (!cancelled) setPdfState('pdf');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [lesson]);
 
   if (!lesson) return null;
@@ -124,7 +131,19 @@ export default function CardModal({ lesson, onClose }: CardModalProps) {
             ✕ Zatvori
           </button>
         </div>
-        <PdfViewer pdfUrl={pdfUrl} zoomLevel={zoomLevel} />
+        {pdfState === 'checking' && (
+          <div className="flex h-full items-center justify-center text-gray-600">
+            Učitavanje PDF-a...
+          </div>
+        )}
+        {pdfState === 'invalid' && (
+          <div className="flex h-full items-center justify-center px-8 text-center text-gray-800">
+            <p className="max-w-md text-base leading-relaxed">{NOT_A_PDF_MESSAGE}</p>
+          </div>
+        )}
+        {pdfState === 'pdf' && (
+          <iframe title={lesson.title} src={pdfUrl} className="h-full w-full bg-gray-100" />
+        )}
       </div>
     </div>
   );
